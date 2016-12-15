@@ -7,7 +7,7 @@ from javactl.util import normalize_path
 
 
 class AppSetting(CaseClass):
-    def __init__(self, name=None, home=None, jar=None, entry_point=None, command=None, pid_file=None):
+    def __init__(self, name=None, home=None, jar=None, staging_jar=None, entry_point=None, command=None, pid_file=None):
         # constraints
         assert name is not None, 'app.name is required'
         assert home is not None, 'app.home is required'
@@ -22,6 +22,7 @@ class AppSetting(CaseClass):
             ('name', name),
             ('home', home),
             ('jar', omap(normalize, jar)),
+            ('staging_jar', omap(normalize, staging_jar)),
             ('entry_point', entry_point),
             ('command', omap(normalize, command)),
             ('pid_file', omap(normalize, pid_file))

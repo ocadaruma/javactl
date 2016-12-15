@@ -6,6 +6,7 @@ import re
 import time
 import getpass
 import glob
+import shutil
 from datetime import datetime, timedelta
 from mog_commons.command import execute_command, capture_command, execute_command_with_pid, pid_exists
 from mog_commons.case_class import CaseClass
@@ -99,7 +100,7 @@ class Executor(CaseClass):
 
     def execute(self, now):
         return self._execute_commands(self.setting.pre_commands, now)._execute_application(now)._execute_commands(
-            self.setting.post_commands, now)
+            self.setting.post_commands, now)._replace_jar()
 
     def _execute_application(self, now):
         if self.failed:
@@ -161,3 +162,13 @@ class Executor(CaseClass):
                         self.setting.app_setting.name, cmd, ret))
                     failed = True
         return self.copy(failed=failed)
+
+    def _replace_jar(self):
+        jar = self.setting.app_setting.jar
+        staging_jar = self.setting.app_setting.staging_jar
+
+        if jar is not None and staging_jar is not None:
+            if os.path.exists(staging_jar):
+                shutil.move(staging_jar, jar)
+
+        return self

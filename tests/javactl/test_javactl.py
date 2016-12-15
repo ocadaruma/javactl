@@ -83,3 +83,57 @@ class TestJavaCtl(TestCase):
         finally:
             # clean up temporary files
             self._remove_dirs(tempdir)
+
+    def test_main_with_staging_jar(self):
+        self.maxDiff = None
+
+        curdir = os.path.abspath(os.path.curdir)
+        template_file = os.path.join(curdir, 'tests', 'resources', 'test_02.yml.j2')
+
+        tempdir = tempfile.mkdtemp()
+
+        try:
+            # create configuration file
+            conf_file = os.path.join(tempdir, 'test_02.yml')
+
+            with io.open(conf_file, 'w') as fout:
+                with io.open(template_file) as fin:
+                    template_data = fin.read()
+                s = jinja2.Environment().from_string(template_data).render(
+                        tempdir=tempdir, curdir=curdir, os_user=getpass.getuser())
+                fout.write(s)
+
+            # prepare executables
+            bin_dir = os.path.join(tempdir, 'bin')
+            staging_dir = os.path.join(bin_dir, 'staging')
+            os.mkdir(bin_dir)
+            os.mkdir(staging_dir)
+            jar_file = os.path.join(bin_dir, 'your-app-assembly-0.1.0.jar')
+            staging_file = os.path.join(staging_dir, 'staging-your-app-assembly-0.1.0.jar')
+
+            with io.open(jar_file, 'w') as fout:
+                fout.write('your-app')
+            with io.open(staging_file, 'w') as fout:
+                fout.write('staging-your-app')
+
+            # do the work
+            javactl.main(['javactl', conf_file])
+
+            # jar file should be replaced with staging jar file
+            with io.open(jar_file) as f:
+                jar_content = f.read()
+            self.assertEqual(jar_content, 'staging-your-app')
+
+            self.assertFalse(os.path.exists(staging_file))
+
+            # if staging jar file does not exists, nothing happens
+            with io.open(jar_file, 'w') as fout:
+                fout.write('your-app')
+            javactl.main(['javactl', conf_file])
+            with io.open(jar_file) as f:
+                jar_content = f.read()
+            self.assertEqual(jar_content, 'your-app')
+
+        finally:
+            # clean up temporary files
+            self._remove_dirs(tempdir)
